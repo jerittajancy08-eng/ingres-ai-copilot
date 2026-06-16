@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     access_token_minutes: int = 60 * 12
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-1.5-flash"
+    gemini_embedding_model: str = "models/text-embedding-004"
     chroma_persist_directory: str = "./chroma"
     cors_origins_raw: str = Field(default="http://localhost:3000", alias="CORS_ORIGINS")
 

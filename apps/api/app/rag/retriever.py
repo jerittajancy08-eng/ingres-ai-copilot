@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import chromadb
 
 from app.core.config import settings
-from app.rag.embeddings import HashingEmbeddingFunction
+from app.rag.embeddings import get_collection_name, get_embedding_function
 
 
 @dataclass(frozen=True)
@@ -17,18 +17,25 @@ class RetrievedDocument:
 
 class GroundwaterRetriever:
     def __init__(self) -> None:
+        self.embedding_function = get_embedding_function()
         self.client = chromadb.PersistentClient(path=settings.chroma_persist_directory)
         self.collection = self.client.get_or_create_collection(
-            "groundwater_knowledge",
-            embedding_function=HashingEmbeddingFunction(),
-            metadata={"hnsw:space": "cosine"},
+            get_collection_name(),
+            embedding_function=self.embedding_function,
+            metadata={"hnsw:space": "cosine", "domain": "groundwater", "embedding_provider": get_collection_name()},
         )
 
     def retrieve(self, query: str, limit: int = 4) -> list[RetrievedDocument]:
-        if self.collection.count() == 0:
+        query = query.strip()
+        if not query or self.collection.count() == 0:
             return []
 
-        results = self.collection.query(query_texts=[query], n_results=limit, include=["documents", "metadatas", "distances"])
+        query_embedding = self.embedding_function.embed_query(query)
+        results = self.collection.query(
+            query_embeddings=[query_embedding],
+            n_results=limit,
+            include=["documents", "metadatas", "distances"],
+        )
         documents = results.get("documents", [[]])[0]
         metadatas = results.get("metadatas", [[]])[0]
         distances = results.get("distances", [[]])[0]
@@ -40,7 +47,7 @@ class GroundwaterRetriever:
                     source=str(metadata.get("source", "local")),
                     excerpt=document,
                     chunk_index=int(metadata.get("chunk_index", 0)),
-                    score=1 - float(distance) if distance is not None else None,
+                    score=max(0.0, 1 - float(distance)) if distance is not None else None,
                 )
             )
         return retrieved

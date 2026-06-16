@@ -3,7 +3,7 @@ from uuid import uuid4
 import chromadb
 
 from app.core.config import settings
-from app.rag.embeddings import HashingEmbeddingFunction
+from app.rag.embeddings import get_collection_name, get_embedding_function
 
 
 CHUNK_SIZE = 1200
@@ -13,9 +13,9 @@ CHUNK_OVERLAP = 180
 def get_groundwater_collection():
     client = chromadb.PersistentClient(path=settings.chroma_persist_directory)
     return client.get_or_create_collection(
-        "groundwater_knowledge",
-        embedding_function=HashingEmbeddingFunction(),
-        metadata={"hnsw:space": "cosine"},
+        get_collection_name(),
+        embedding_function=get_embedding_function(),
+        metadata={"hnsw:space": "cosine", "domain": "groundwater", "embedding_provider": get_collection_name()},
     )
 
 
@@ -59,7 +59,7 @@ def ingest_document(title: str, source: str, text: str) -> dict[str, int | str]:
     chunks = chunk_text(text)
     ids = [str(uuid4()) for _ in chunks]
     metadatas = [
-        {"title": title, "source": source, "chunk_index": index}
+        {"title": title, "source": source, "chunk_index": index, "document_id": source}
         for index, _ in enumerate(chunks)
     ]
     if chunks:
