@@ -1,0 +1,22 @@
+{
+  "name": "ingres-ai-copilot",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Multilingual AI groundwater assistant for citizens, farmers and government officers.",
+  "scripts": {
+    "dev:web": "npm --workspace apps/web run dev",
+    "build:web": "npm --workspace apps/web run build",
+    "lint:web": "npm --workspace apps/web run lint",
+    "dev:api": "uvicorn app.main:app --reload --app-dir apps/api",
+    "test:api": "pytest apps/api/tests",
+    "format:api": "ruff format apps/api",
+    "lint:api": "ruff check apps/api"
+  },
+  "workspaces": [
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.0.0"
+  }
+}

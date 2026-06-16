@@ -1,0 +1,46 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/app/chroma
+      - api_uploads:/app/uploads
+    depends_on:
+      - postgres
+      - chroma
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ingres_ai
+      POSTGRES_USER: ingres
+      POSTGRES_PASSWORD: ingres_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  chroma:
+    image: chromadb/chroma:0.5.23
+    ports:
+      - "8001:8000"
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  chroma_data:
+  api_uploads:
+  postgres_data:
