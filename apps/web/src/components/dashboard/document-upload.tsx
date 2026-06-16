@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, RefreshCw, Upload } from "lucide-react";
+import { CheckCircle2, FileText, RefreshCw, Upload } from "lucide-react";
 import { api } from "@/lib/api";
 import type { DocumentRecord } from "@/types/api";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ export function DocumentUpload() {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string>();
+  const [status, setStatus] = useState<string>();
   const [selected, setSelected] = useState<DocumentRecord>();
 
   useEffect(() => {
@@ -31,12 +32,15 @@ export function DocumentUpload() {
     if (!file) return;
     setIsUploading(true);
     setError(undefined);
+    setStatus("Extracting text and creating vector chunks...");
     try {
       const created = await api.uploadDocument(file);
       setDocuments((current) => [created, ...current]);
       setSelected(created);
-    } catch {
-      setError("Upload failed. Please use a PDF, DOCX, or TXT file with extractable text.");
+      setStatus(`${created.chunk_count} chunks indexed in ChromaDB. Copilot can cite this source now.`);
+    } catch (error) {
+      setStatus(undefined);
+      setError(error instanceof Error ? error.message : "Upload failed. Please use a PDF, DOCX, or TXT file with extractable text.");
     } finally {
       setIsUploading(false);
     }
@@ -68,6 +72,12 @@ export function DocumentUpload() {
             <span className="mt-3 block text-sm font-medium">{isUploading ? "Indexing document" : "Choose a document"}</span>
             <span className="mt-1 block text-xs text-muted-foreground">Text is extracted, chunked, embedded, and stored in ChromaDB.</span>
           </label>
+          {status ? (
+            <p className="mt-3 flex items-center gap-2 text-sm text-emerald-700">
+              <CheckCircle2 className="size-4" />
+              {status}
+            </p>
+          ) : null}
           {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         </Card>
         <div className="space-y-2">

@@ -16,7 +16,14 @@ async function request<T>(path: string, init?: RequestInit, withJson = true): Pr
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    let detail = `API request failed: ${response.status}`;
+    try {
+      const payload = (await response.json()) as { detail?: string };
+      detail = payload.detail ?? detail;
+    } catch {
+      // Keep the status-only message when the response is not JSON.
+    }
+    throw new Error(detail);
   }
 
   return response.json() as Promise<T>;
