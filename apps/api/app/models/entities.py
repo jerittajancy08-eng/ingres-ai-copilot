@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from uuid import uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
@@ -7,13 +8,21 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.session import Base
 
 
+class UserRole(StrEnum):
+    viewer = "viewer"
+    analyst = "analyst"
+    editor = "editor"
+    admin = "admin"
+    super_admin = "super_admin"
+
+
 class User(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String)
-    role: Mapped[str] = mapped_column(String, default="citizen")
+    role: Mapped[str] = mapped_column(String, default=UserRole.viewer.value)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     conversations: Mapped[list["Conversation"]] = relationship(back_populates="user")
     documents: Mapped[list["Document"]] = relationship(back_populates="uploaded_by")
@@ -50,6 +59,20 @@ class Document(Base):
     source: Mapped[str] = mapped_column(String, unique=True, index=True)
     content_type: Mapped[str] = mapped_column(String, default="text/plain")
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
+    access_roles: Mapped[str] = mapped_column(Text, default=UserRole.viewer.value)
     uploaded_by_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     uploaded_by: Mapped[User | None] = relationship(back_populates="documents")
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    email: Mapped[str | None] = mapped_column(String, nullable=True)
+    role: Mapped[str | None] = mapped_column(String, nullable=True)
+    action: Mapped[str] = mapped_column(String, index=True)
+    resource: Mapped[str | None] = mapped_column(String, nullable=True)
+    ip: Mapped[str | None] = mapped_column(String, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

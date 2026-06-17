@@ -13,14 +13,22 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 60 * 12
     gemini_api_key: str | None = None
+    groq_api_key: str | None = None
     gemini_model: str = "gemini-1.5-flash"
     gemini_embedding_model: str = "models/text-embedding-004"
     chroma_persist_directory: str = "./chroma"
-    cors_origins_raw: str = Field(default="http://localhost:3000", alias="CORS_ORIGINS")
+    cors_origins_raw: str = Field(default="http://localhost:3000,http://127.0.0.1:3000", alias="CORS_ORIGINS")
 
     @property
     def cors_origins(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins_raw.split(",") if origin.strip()]
+        # Ensure both localhost and 127.0.0.1 are included
+        origins = [origin.strip() for origin in self.cors_origins_raw.split(",") if origin.strip()]
+        # Add default local origins if not present
+        if not any("localhost:3000" in o for o in origins):
+            origins.append("http://localhost:3000")
+        if not any("127.0.0.1:3000" in o for o in origins):
+            origins.append("http://127.0.0.1:3000")
+        return origins
 
 
 @lru_cache

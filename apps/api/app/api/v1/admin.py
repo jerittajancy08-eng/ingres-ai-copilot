@@ -1,10 +1,15 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+
+from app.api.deps import require_min_role
+from app.models.entities import User, UserRole
 
 router = APIRouter()
 
 
 @router.get("/analytics")
-def analytics() -> dict[str, object]:
+def analytics(user: Annotated[User, Depends(require_min_role(UserRole.admin))]) -> dict[str, object]:
     return {
         "active_users": 1240,
         "conversations": 8950,

@@ -64,12 +64,15 @@ export type Analytics = {
 export type User = {
   id: string;
   email: string;
-  role: string;
+  role: UserRole;
 };
+
+export type UserRole = "viewer" | "analyst" | "editor" | "admin" | "super_admin";
 
 export type TokenResponse = {
   access_token: string;
   token_type: string;
+  user: User;
 };
 
 export type DocumentRecord = {

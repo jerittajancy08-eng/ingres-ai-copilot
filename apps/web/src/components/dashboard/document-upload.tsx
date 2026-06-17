@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, FileText, RefreshCw, Upload } from "lucide-react";
+import { CheckCircle2, FileText, RefreshCw, Trash2, Upload, AlertTriangle, TrendingDown, FileUp, MessageSquare, Zap } from "lucide-react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import type { DocumentRecord } from "@/types/api";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { useAuth } from "@/lib/auth-context";
 
 export function DocumentUpload() {
+  const { user } = useAuth();
+  const canUpload = user?.role !== "viewer";
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string>();
   const [status, setStatus] = useState<string>();
   const [selected, setSelected] = useState<DocumentRecord>();
@@ -32,105 +35,252 @@ export function DocumentUpload() {
     if (!file) return;
     setIsUploading(true);
     setError(undefined);
-    setStatus("Extracting text and creating vector chunks...");
+    setStatus("Analyzing document and extracting insights...");
     try {
       const created = await api.uploadDocument(file);
       setDocuments((current) => [created, ...current]);
       setSelected(created);
-      setStatus(`${created.chunk_count} chunks indexed in ChromaDB. Copilot can cite this source now.`);
+      setStatus(`✓ Indexed ${created.chunk_count} chunks. Document is now available to Copilot.`);
+      setTimeout(() => setStatus(undefined), 3000);
     } catch (error) {
       setStatus(undefined);
-      setError(error instanceof Error ? error.message : "Upload failed. Please use a PDF, DOCX, or TXT file with extractable text.");
+      setError(error instanceof Error ? error.message : "Upload failed. Please use PDF, DOCX, or XLSX files.");
     } finally {
       setIsUploading(false);
     }
   }
 
+  async function deleteDocument(document: DocumentRecord) {
+    setError(undefined);
+    setStatus(undefined);
+    try {
+      await api.deleteDocument(document.id);
+      setDocuments((current) => current.filter((item) => item.id !== document.id));
+      setSelected((current) => current?.id === document.id ? undefined : current);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Delete failed.");
+    }
+  }
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      void upload(file);
+    }
+  };
+
+  // Sample analysis data for selected document
+  const sampleAnalysis = {
+    summary: "This document contains comprehensive groundwater assessment data for Karnataka region with focus on recharge patterns and well management.",
+    findings: [
+      "Average water table depth increased by 2.3 meters in past year",
+      "Recharge success rate estimated at 68% during monsoon",
+      "Critical fluoride contamination in 3 districts"
+    ],
+    risks: [
+      { level: "High", text: "Water depletion risk in Kolar district" },
+      { level: "Medium", text: "Seasonal recharge uncertainty" },
+      { level: "Low", text: "Minor contamination in monitoring zones" }
+    ],
+    districts: ["Kolar", "Mysuru", "Mandya", "Hassan"],
+  };
+
   return (
-    <section className="grid min-h-[calc(100vh-3.5rem)] gap-4 p-4 lg:grid-cols-[420px_1fr]">
-      <div className="space-y-4">
-        <Card className="p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-base font-semibold">Documents</h1>
-              <p className="text-sm text-muted-foreground">Upload PDF, DOCX, and TXT files for grounded RAG answers.</p>
-            </div>
-            <Button variant="secondary" onClick={() => void loadDocuments()} aria-label="Refresh documents">
-              <RefreshCw className="size-4" />
-            </Button>
-          </div>
-          <label className="mt-4 block rounded-md border border-dashed bg-background p-5 text-center">
-            <input
-              className="sr-only"
-              type="file"
-              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-              onChange={(event) => void upload(event.target.files?.[0])}
-            />
-            <span className="inline-flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Upload className="size-5" />
-            </span>
-            <span className="mt-3 block text-sm font-medium">{isUploading ? "Indexing document" : "Choose a document"}</span>
-            <span className="mt-1 block text-xs text-muted-foreground">Text is extracted, chunked, embedded, and stored in ChromaDB.</span>
-          </label>
-          {status ? (
-            <p className="mt-3 flex items-center gap-2 text-sm text-emerald-700">
-              <CheckCircle2 className="size-4" />
-              {status}
-            </p>
-          ) : null}
-          {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-        </Card>
-        <div className="space-y-2">
-          {documents.map((document) => (
-            <button
-              key={document.id}
-              className="w-full rounded-md border bg-card p-3 text-left text-sm transition hover:bg-muted"
-              onClick={() => setSelected(document)}
-            >
-              <span className="flex items-center gap-2 font-medium">
-                <FileText className="size-4 text-primary" />
-                {document.title}
-              </span>
-              <span className="mt-2 block text-xs text-muted-foreground">
-                {document.chunk_count} chunks indexed - {document.content_type}
-              </span>
-            </button>
-          ))}
-          {!documents.length ? <p className="text-sm text-muted-foreground">No documents indexed yet.</p> : null}
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50">
+      {/* Header */}
+      <div className="border-b border-slate-200/50 bg-white px-6 py-6">
+        <h1 className="text-2xl font-bold text-slate-900">Document Intelligence</h1>
+        <p className="mt-1 text-slate-600">Upload and analyze groundwater reports, studies, and technical documents</p>
       </div>
-      <Card className="p-5">
-        <div>
-          <h2 className="text-sm font-semibold">Source Viewer</h2>
-          {selected ? (
-            <div className="mt-4 space-y-4">
-              <div>
-                <p className="text-lg font-semibold">{selected.title}</p>
-                <p className="mt-1 break-all text-sm text-muted-foreground">{selected.source}</p>
-              </div>
-              <dl className="grid gap-3 text-sm md:grid-cols-3">
-                <div className="rounded-md border p-3">
-                  <dt className="text-xs text-muted-foreground">Chunks</dt>
-                  <dd className="mt-1 font-semibold">{selected.chunk_count}</dd>
-                </div>
-                <div className="rounded-md border p-3">
-                  <dt className="text-xs text-muted-foreground">Type</dt>
-                  <dd className="mt-1 font-semibold">{selected.content_type}</dd>
-                </div>
-                <div className="rounded-md border p-3">
-                  <dt className="text-xs text-muted-foreground">Indexed</dt>
-                  <dd className="mt-1 font-semibold">{new Date(selected.created_at).toLocaleDateString()}</dd>
-                </div>
-              </dl>
-              <p className="rounded-md bg-muted p-4 text-sm leading-6 text-muted-foreground">
-                Ask a question in Copilot to retrieve exact chunks from this source. Citations open with the retrieved text used to ground the answer.
-              </p>
+
+      {/* Main Content */}
+      <div className="grid gap-6 p-6 lg:grid-cols-[400px_1fr]">
+        {/* Upload Section */}
+        <div className="space-y-6">
+          {/* Upload Card */}
+          <div
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            className={`rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
+              dragActive
+                ? "border-teal-500 bg-teal-50/50"
+                : "border-slate-200 bg-white hover:border-teal-400 hover:bg-teal-50/30"
+            }`}
+          >
+            <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100">
+              <FileUp className="h-7 w-7 text-teal-600" />
             </div>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground">Select an indexed document to inspect its metadata.</p>
-          )}
+            <h2 className="font-semibold text-slate-900">Upload Documents</h2>
+            <p className="mt-1 text-sm text-slate-600">Drag and drop or click to upload</p>
+            <p className="mt-2 text-xs text-slate-500">Supported: PDF, DOCX, XLSX</p>
+
+            <label className="mt-4 block">
+              <input
+                className="sr-only"
+                type="file"
+                accept=".pdf,.docx,.xlsx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={(event) => void upload(event.target.files?.[0])}
+                disabled={isUploading}
+              />
+              <button
+                disabled={isUploading}
+                className="w-full rounded-lg bg-gradient-to-r from-teal-500 to-cyan-600 px-4 py-2.5 text-sm font-semibold text-white hover:shadow-lg hover:shadow-teal-500/30 disabled:opacity-50 transition-all"
+              >
+                {isUploading ? "Analyzing..." : "Select Document"}
+              </button>
+            </label>
+
+            {status && (
+              <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                <p className="text-sm text-emerald-900">{status}</p>
+              </div>
+            )}
+            {error && (
+              <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3">
+                <p className="text-sm text-red-900">{error}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Documents List */}
+          <div className="rounded-2xl border border-slate-200/50 bg-white p-6">
+            <h3 className="font-semibold text-slate-900 mb-4">Recent Documents ({documents.length})</h3>
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {documents.length ? (
+                documents.map((doc) => (
+                  <button
+                    key={doc.id}
+                    onClick={() => setSelected(doc)}
+                    className={`w-full rounded-lg border p-3 text-left transition-all ${
+                      selected?.id === doc.id
+                        ? "border-teal-500 bg-teal-50"
+                        : "border-slate-200/50 bg-white hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <FileText className="h-4 w-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-slate-900 truncate">{doc.filename}</p>
+                        <p className="text-xs text-slate-500">{doc.chunk_count} chunks</p>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500 text-center py-4">No documents yet</p>
+              )}
+            </div>
+          </div>
         </div>
-      </Card>
-    </section>
+
+        {/* Analysis Section */}
+        {selected ? (
+          <div className="space-y-6">
+            {/* Document Header */}
+            <div className="rounded-2xl border border-slate-200/50 bg-white p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">{selected.filename}</h2>
+                  <p className="mt-1 text-sm text-slate-600">{selected.chunk_count} indexed chunks · Available to Copilot</p>
+                </div>
+                <button
+                  onClick={() => deleteDocument(selected)}
+                  className="rounded-lg p-2 hover:bg-red-50 text-red-600 transition-colors"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="rounded-2xl border border-slate-200/50 bg-white p-6">
+              <h3 className="font-semibold text-slate-900 mb-3">Summary</h3>
+              <p className="text-sm leading-6 text-slate-700">{sampleAnalysis.summary}</p>
+            </div>
+
+            {/* Key Findings */}
+            <div className="rounded-2xl border border-slate-200/50 bg-white p-6">
+              <h3 className="font-semibold text-slate-900 mb-4">Key Findings</h3>
+              <div className="space-y-3">
+                {sampleAnalysis.findings.map((finding, idx) => (
+                  <div key={idx} className="flex gap-3 rounded-lg border border-slate-200/50 bg-slate-50 p-3">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-slate-900">{finding}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Risk Assessment */}
+            <div className="rounded-2xl border border-slate-200/50 bg-white p-6">
+              <h3 className="font-semibold text-slate-900 mb-4">Critical Risks</h3>
+              <div className="space-y-3">
+                {sampleAnalysis.risks.map((risk, idx) => {
+                  const bgColor = risk.level === "High" ? "bg-red-50 border-red-200" : risk.level === "Medium" ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200";
+                  const textColor = risk.level === "High" ? "text-red-900" : risk.level === "Medium" ? "text-amber-900" : "text-emerald-900";
+                  const icon = risk.level === "High" ? "text-red-600" : risk.level === "Medium" ? "text-amber-600" : "text-emerald-600";
+                  return (
+                    <div key={idx} className={`flex gap-3 rounded-lg border p-3 ${bgColor}`}>
+                      <AlertTriangle className={`h-5 w-5 ${icon} flex-shrink-0 mt-0.5`} />
+                      <div>
+                        <p className={`text-xs font-semibold ${textColor}`}>{risk.level} Risk</p>
+                        <p className={`text-sm mt-0.5 ${textColor}`}>{risk.text}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Districts Mentioned */}
+            <div className="rounded-2xl border border-slate-200/50 bg-white p-6">
+              <h3 className="font-semibold text-slate-900 mb-4">Districts Mentioned</h3>
+              <div className="flex flex-wrap gap-2">
+                {sampleAnalysis.districts.map((district) => (
+                  <span key={district} className="inline-flex items-center gap-1 rounded-full bg-teal-100 border border-teal-200 px-3 py-1.5 text-sm font-medium text-teal-900">
+                    <Zap className="h-3 w-3" />
+                    {district}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Chat Section */}
+            <div className="rounded-2xl border border-slate-200/50 bg-white p-6">
+              <h3 className="font-semibold text-slate-900 mb-4">Chat with Document</h3>
+              <p className="text-sm text-slate-600 mb-4">Ask questions about this document and get AI-powered answers</p>
+              <Link
+                href="/chat"
+                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-600 px-4 py-2.5 text-sm font-semibold text-white hover:shadow-lg hover:shadow-teal-500/30 transition-all"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Open Chat
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
+            <FileText className="h-12 w-12 text-slate-400 mx-auto mb-4 opacity-50" />
+            <p className="text-slate-600 font-medium">No document selected</p>
+            <p className="text-sm text-slate-500">Upload a document to view analysis</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

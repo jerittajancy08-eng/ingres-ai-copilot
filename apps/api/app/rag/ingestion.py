@@ -54,12 +54,13 @@ def split_long_text(text: str, chunk_size: int, overlap: int) -> list[str]:
     return chunks
 
 
-def ingest_document(title: str, source: str, text: str) -> dict[str, int | str]:
+def ingest_document(title: str, source: str, text: str, access_roles: list[str] | None = None) -> dict[str, int | str]:
     collection = get_groundwater_collection()
     chunks = chunk_text(text)
     ids = [str(uuid4()) for _ in chunks]
+    roles = ",".join(access_roles or ["viewer"])
     metadatas = [
-        {"title": title, "source": source, "chunk_index": index, "document_id": source}
+        {"title": title, "source": source, "chunk_index": index, "document_id": source, "access_roles": roles}
         for index, _ in enumerate(chunks)
     ]
     if chunks:

@@ -13,6 +13,7 @@ class RetrievedDocument:
     excerpt: str
     chunk_index: int
     score: float | None = None
+    access_roles: list[str] | None = None
 
 
 class GroundwaterRetriever:
@@ -48,6 +49,7 @@ class GroundwaterRetriever:
                     excerpt=document,
                     chunk_index=int(metadata.get("chunk_index", 0)),
                     score=max(0.0, 1 - float(distance)) if distance is not None else None,
+                    access_roles=str(metadata.get("access_roles", "viewer")).split(","),
                 )
             )
         return retrieved

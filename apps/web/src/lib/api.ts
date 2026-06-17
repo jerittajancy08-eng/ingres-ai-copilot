@@ -1,5 +1,5 @@
 import { getToken } from "@/lib/auth";
-import type { Analytics, ChatResponse, Conversation, DocumentRecord, GroundwaterSummary, MapAsset, TokenResponse, User } from "@/types/api";
+import type { Analytics, ChatResponse, Conversation, DocumentRecord, GroundwaterSummary, MapAsset, TokenResponse, User, UserRole } from "@/types/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
@@ -35,12 +35,13 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
-  register: (email: string, password: string, role = "citizen") =>
+  register: (email: string, password: string, role = "viewer") =>
     request<User>("/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password, role }),
     }),
   me: () => request<User>("/auth/me"),
+  logout: () => request<{ status: string }>("/auth/logout", { method: "POST" }),
   chat: (message: string, language: string, conversationId?: string, topK = 4) =>
     request<ChatResponse>("/chat", {
       method: "POST",
@@ -66,4 +67,17 @@ export const api = {
     form.append("file", file);
     return request<DocumentRecord>("/documents/upload", { method: "POST", body: form }, false);
   },
+  deleteDocument: (documentId: string) => request<{ status: string }>(`/documents/${documentId}`, { method: "DELETE" }),
+  reindexDocument: (documentId: string) => request<{ status: string }>(`/documents/${documentId}/reindex`, { method: "POST" }),
+  users: () => request<User[]>("/users"),
+  createUser: (email: string, password: string, role: UserRole) =>
+    request<User>("/users", {
+      method: "POST",
+      body: JSON.stringify({ email, password, role }),
+    }),
+  changeUserRole: (userId: string, role: UserRole) =>
+    request<User>(`/users/${userId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
 };

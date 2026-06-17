@@ -1,12 +1,13 @@
 from typing import Annotated
+import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import audit_log, get_current_user, require_min_role
 from app.db.session import get_db
-from app.models.entities import Conversation, User
+from app.models.entities import Conversation, User, UserRole
 from app.schemas.chat import (
     ChatRequest,
     ChatResponse,
@@ -17,6 +18,8 @@ from app.schemas.chat import (
 )
 from app.services.chat_service import ChatService
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 service = ChatService()
 
@@ -24,22 +27,48 @@ service = ChatService()
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     payload: ChatRequest,
+    request: Request,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User | None, Depends(get_current_user)],
+    user: Annotated[User, Depends(require_min_role(UserRole.viewer))],
 ) -> ChatResponse:
-    return await service.chat(
-        db,
-        payload.message,
-        payload.language,
-        payload.conversation_id,
-        user,
-        payload.top_k,
-    )
+    try:
+        response = await service.chat(
+            db,
+            payload.message,
+            payload.language,
+            payload.conversation_id,
+            user,
+            payload.top_k,
+        )
+        audit_log(db, user, "CHAT_QUERY", payload.message[:120], request.client.host if request.client else None)
+        db.commit()
+        return response
+    except Exception as e:
+        logger.error(f"❌ Chat endpoint error: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chat failed: {str(e)}"
+        )
 
 
 @router.post("/chat/query", response_model=ChatResponse)
-async def query(payload: QueryRequest) -> ChatResponse:
-    return await service.query(payload.query, payload.language, payload.top_k)
+async def query(
+    payload: QueryRequest,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(require_min_role(UserRole.viewer))],
+) -> ChatResponse:
+    try:
+        response = await service.query(payload.query, payload.language, user, payload.top_k)
+        audit_log(db, user, "CHAT_QUERY", payload.query[:120], request.client.host if request.client else None)
+        db.commit()
+        return response
+    except Exception as e:
+        logger.error(f"❌ Query endpoint error: {type(e).__name__}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Query failed: {str(e)}"
+        )
 
 
 @router.get("/conversations", response_model=list[ConversationResponse])

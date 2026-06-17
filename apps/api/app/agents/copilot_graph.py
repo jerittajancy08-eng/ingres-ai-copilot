@@ -3,7 +3,7 @@ from typing import TypedDict
 from langgraph.graph import END, StateGraph
 
 from app.rag.retriever import RetrievedDocument
-from app.services.gemini_service import GeminiService
+from app.services.groq_service import GroqService
 
 
 class CopilotState(TypedDict):
@@ -14,18 +14,18 @@ class CopilotState(TypedDict):
 
 
 class CopilotGraph:
-    """LangGraph orchestration for retrieval-grounded answer generation."""
 
-    def __init__(self, gemini: GeminiService) -> None:
-        self.gemini = gemini
+    def __init__(self, llm: GroqService) -> None:
+        self.llm = llm
+
         workflow = StateGraph(CopilotState)
-        workflow.add_node("generate_answer", self._generate_answer)
+        workflow.add_node("generate_answer", self.generate_answer)
         workflow.set_entry_point("generate_answer")
         workflow.add_edge("generate_answer", END)
         self.graph = workflow.compile()
 
-    async def _generate_answer(self, state: CopilotState) -> CopilotState:
-        answer = await self.gemini.generate_groundwater_answer(
+    async def generate_answer(self, state: CopilotState) -> CopilotState:
+        answer = await self.llm.generate_groundwater_answer(
             message=state["message"],
             language=state["language"],
             context=state["context"],
