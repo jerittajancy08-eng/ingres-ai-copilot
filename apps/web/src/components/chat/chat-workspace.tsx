@@ -507,11 +507,11 @@ export function ChatWorkspace() {
                             })()}
 
                             {/* Citations */}
-                            {message.citations?.length > 0 && (
+                            {(message.citations?.length ?? 0) > 0 && (
                               <div className="flex flex-col gap-2 mt-2">
                                 <p className="text-xs font-medium text-slate-600 px-1">Sources:</p>
                                 <div className="flex flex-wrap gap-2">
-                                  {message.citations.map((citation, citationIndex) => (
+                                  {(message.citations ?? []).map((citation, citationIndex) => (
                                     <button
                                       key={`${citation.source}-${citation.chunk_index}-${citationIndex}`}
                                       onClick={() => {

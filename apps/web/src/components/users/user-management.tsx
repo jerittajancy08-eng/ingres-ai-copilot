@@ -198,7 +198,6 @@ export function UserManagement() {
                   <div className="flex justify-end gap-2">
                     <Button 
                       variant="ghost" 
-                      size="sm"
                       title="Disable account"
                       disabled
                       className="text-muted-foreground"
@@ -207,7 +206,6 @@ export function UserManagement() {
                     </Button>
                     <Button 
                       variant="ghost" 
-                      size="sm"
                       title="Delete account"
                       disabled
                       className="text-red-600 hover:bg-red-50"

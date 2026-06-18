@@ -16,17 +16,17 @@ export function canAccessRole(userRole: UserRole | undefined, requiredRole: User
 }
 
 type AuthContextValue = {
-  user?: User;
+  user: User | null;
   isLoading: boolean;
-  setUser: (user?: User) => void;
-  hasRole: (role: UserRole) => boolean;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  hasRole: (role: string) => boolean;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User>();
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(setUser)
       .catch(() => {
         clearToken();
-        setUser(undefined);
+        setUser(null);
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -48,11 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     isLoading,
     setUser,
-    hasRole: (role) => canAccessRole(user?.role, role),
+    hasRole: (role) => canAccessRole(user?.role as any, role as any),
     logout: async () => {
       await api.logout().catch(() => undefined);
       clearToken();
-      setUser(undefined);
+      setUser(null);
     },
   }), [isLoading, user]);
 

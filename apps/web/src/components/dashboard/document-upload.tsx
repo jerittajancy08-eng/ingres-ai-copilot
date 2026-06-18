@@ -184,7 +184,7 @@ export function DocumentUpload() {
                     <div className="flex items-start gap-2">
                       <FileText className="h-4 w-4 text-teal-600 mt-0.5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-slate-900 truncate">{doc.filename}</p>
+                        <p className="text-sm font-medium text-slate-900 truncate">{doc.title}</p>
                         <p className="text-xs text-slate-500">{doc.chunk_count} chunks</p>
                       </div>
                     </div>
@@ -204,7 +204,7 @@ export function DocumentUpload() {
             <div className="rounded-2xl border border-slate-200/50 bg-white p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">{selected.filename}</h2>
+                  <h2 className="text-xl font-bold text-slate-900">{selected.title}</h2>
                   <p className="mt-1 text-sm text-slate-600">{selected.chunk_count} indexed chunks · Available to Copilot</p>
                 </div>
                 <button
