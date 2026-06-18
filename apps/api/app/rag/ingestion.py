@@ -58,7 +58,7 @@ def ingest_document(title: str, source: str, text: str, access_roles: list[str] 
     collection = get_groundwater_collection()
     chunks = chunk_text(text)
     ids = [str(uuid4()) for _ in chunks]
-    roles = ",".join(access_roles or ["viewer"])
+    roles = ",".join(access_roles or ["user"])
     metadatas = [
         {"title": title, "source": source, "chunk_index": index, "document_id": source, "access_roles": roles}
         for index, _ in enumerate(chunks)

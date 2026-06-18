@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileSearch, Mic, Send, Volume2, Menu, X, Droplet, Plus, MessageSquare, Map, MapPin, FileText, Settings, BarChart3, LogOut, ChevronDown, MoreVertical, Copy, ThumbsUp, ThumbsDown } from "lucide-react";
+import { FileSearch, Send, Volume2, Menu, X, Droplet, Plus, MessageSquare, MapPin, FileText, Settings, BarChart3, LogOut, ChevronDown, MoreVertical, Copy, ThumbsUp, ThumbsDown } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -46,22 +46,22 @@ function getSmartActions(
     });
   }
 
-  // Map/location keywords
-  if (
-    lowerContent.includes("district") ||
-    lowerContent.includes("location") ||
-    lowerContent.includes("map") ||
-    lowerContent.includes("area") ||
-    lowerContent.includes("region") ||
-    lowerContent.includes("zone")
-  ) {
-    actions.push({
-      id: "view-map",
-      label: "View on Map",
-      icon: <MapPin className="h-3.5 w-3.5" />,
-      onClick: onViewMap,
-    });
-  }
+  // Map/location keywords - REMOVED (non-functional feature)
+  // if (
+  //   lowerContent.includes("district") ||
+  //   lowerContent.includes("location") ||
+  //   lowerContent.includes("map") ||
+  //   lowerContent.includes("area") ||
+  //   lowerContent.includes("region") ||
+  //   lowerContent.includes("zone")
+  // ) {
+  //   actions.push({
+  //     id: "view-map",
+  //     label: "View on Map",
+  //     icon: <MapPin className="h-3.5 w-3.5" />,
+  //     onClick: onViewMap,
+  //   });
+  // }
 
   // Comparison keywords
   if (
@@ -262,28 +262,21 @@ export function ChatWorkspace() {
               <MessageSquare className="h-4 w-4" />
               Copilot
             </Link>
-            <Link
-              href="/documents"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
-            >
-              <FileText className="h-4 w-4" />
-              Documents
-            </Link>
-            <Link
-              href="/map"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
-            >
-              <Map className="h-4 w-4" />
-              Maps
-            </Link>
           </div>
         </nav>
 
-        {/* Admin Navigation (if admin) */}
+        {/* Admin Navigation */}
         {user?.role === "admin" && (
           <nav className="px-4 py-6 border-b border-slate-200/50">
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Admin</h3>
             <div className="space-y-2">
+              <Link
+                href="/documents"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <FileText className="h-4 w-4" />
+                Documents
+              </Link>
               <Link
                 href="/analytics"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
@@ -292,11 +285,11 @@ export function ChatWorkspace() {
                 Analytics
               </Link>
               <Link
-                href="/settings"
+                href="/admin"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
               >
                 <Settings className="h-4 w-4" />
-                Settings
+                User Management
               </Link>
             </div>
           </nav>
@@ -564,14 +557,6 @@ export function ChatWorkspace() {
         <div className="border-t border-slate-200/50 bg-white px-4 py-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex gap-3 items-end">
-              <button
-                className="p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-600"
-                aria-label="Voice input"
-                title="Voice input"
-              >
-                <Mic className="h-5 w-5" />
-              </button>
-
               <textarea
                 className="flex-1 min-h-10 max-h-32 rounded-lg border border-slate-200/50 bg-white px-4 py-2 text-sm text-slate-900 placeholder:text-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-transparent transition-all"
                 placeholder="Ask the groundwater copilot..."

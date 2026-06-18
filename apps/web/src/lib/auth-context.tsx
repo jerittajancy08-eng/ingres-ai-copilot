@@ -7,11 +7,8 @@ import { clearToken, getToken } from "@/lib/auth";
 import type { User, UserRole } from "@/types/api";
 
 const ROLE_LEVELS: Record<UserRole, number> = {
-  viewer: 1,
-  analyst: 2,
-  editor: 3,
-  admin: 4,
-  super_admin: 5,
+  user: 1,
+  admin: 2,
 };
 
 export function canAccessRole(userRole: UserRole | undefined, requiredRole: UserRole) {

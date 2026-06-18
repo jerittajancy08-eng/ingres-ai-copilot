@@ -9,11 +9,8 @@ from app.db.session import Base
 
 
 class UserRole(StrEnum):
-    viewer = "viewer"
-    analyst = "analyst"
-    editor = "editor"
+    user = "user"
     admin = "admin"
-    super_admin = "super_admin"
 
 
 class User(Base):
@@ -22,7 +19,7 @@ class User(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String)
-    role: Mapped[str] = mapped_column(String, default=UserRole.viewer.value)
+    role: Mapped[str] = mapped_column(String, default=UserRole.user.value)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     conversations: Mapped[list["Conversation"]] = relationship(back_populates="user")
     documents: Mapped[list["Document"]] = relationship(back_populates="uploaded_by")
@@ -59,7 +56,7 @@ class Document(Base):
     source: Mapped[str] = mapped_column(String, unique=True, index=True)
     content_type: Mapped[str] = mapped_column(String, default="text/plain")
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
-    access_roles: Mapped[str] = mapped_column(Text, default=UserRole.viewer.value)
+    access_roles: Mapped[str] = mapped_column(Text, default=UserRole.user.value)
     uploaded_by_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     uploaded_by: Mapped[User | None] = relationship(back_populates="documents")

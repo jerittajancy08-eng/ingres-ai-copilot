@@ -1,4 +1,4 @@
-import { BarChart3, Map, FileText, TrendingUp, FileSearch } from "lucide-react";
+import { BarChart3, Map, FileText, TrendingUp, FileSearch, AlertTriangle } from "lucide-react";
 
 interface AIActionButtonsProps {
   onAnalyzeRisk?: () => void;
@@ -17,7 +17,7 @@ export function AIActionButtons({
 }: AIActionButtonsProps) {
   const actions = [
     {
-      icon: <AlertTriangleIcon className="h-4 w-4" />,
+      icon: <AlertTriangle className="h-4 w-4" />,
       label: "Analyze Risk",
       onClick: onAnalyzeRisk,
       color: "text-red-600 hover:bg-red-50",

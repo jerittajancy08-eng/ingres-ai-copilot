@@ -55,19 +55,21 @@ export type MapAsset = {
 };
 
 export type Analytics = {
-  active_users: number;
-  conversations: number;
-  documents_indexed: number;
-  top_languages: Array<{ language: string; count: number }>;
+  total_users: number;
+  admin_count: number;
+  regular_user_count: number;
+  total_conversations: number;
+  total_documents: number;
 };
 
 export type User = {
   id: string;
   email: string;
   role: UserRole;
+  created_at?: string;
 };
 
-export type UserRole = "viewer" | "analyst" | "editor" | "admin" | "super_admin";
+export type UserRole = "user" | "admin";
 
 export type TokenResponse = {
   access_token: string;

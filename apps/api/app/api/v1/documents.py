@@ -20,7 +20,7 @@ class IngestRequest(BaseModel):
     title: str
     source: str
     text: str
-    access_roles: list[UserRole] = [UserRole.viewer]
+    access_roles: list[UserRole] = [UserRole.user]
 
 
 def serialize_roles(value: str | list[str] | list[UserRole]) -> str:
@@ -30,7 +30,7 @@ def serialize_roles(value: str | list[str] | list[UserRole]) -> str:
 
 
 def parse_roles(value: str | None) -> list[str]:
-    return [role for role in (value or UserRole.viewer.value).split(",") if role]
+    return [role for role in (value or UserRole.user.value).split(",") if role]
 
 
 def can_access_document(user: User, document: Document) -> bool:
@@ -43,7 +43,7 @@ def ingest(
     payload: IngestRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_min_role(UserRole.editor))],
+    user: Annotated[User, Depends(require_min_role(UserRole.admin))],
 ) -> DocumentResponse:
     access_roles = [role.value for role in payload.access_roles]
     result = ingest_document(payload.title, payload.source, payload.text, access_roles)
@@ -74,7 +74,7 @@ def ingest(
 async def upload_document(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_min_role(UserRole.editor))],
+    user: Annotated[User, Depends(require_min_role(UserRole.admin))],
     file: UploadFile = File(...),
 ) -> DocumentResponse:
     raw = await file.read()
@@ -89,7 +89,7 @@ async def upload_document(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Document does not contain extractable text")
 
     source = f"upload://{uuid4()}-{filename}"
-    access_roles = [UserRole.viewer.value]
+    access_roles = [UserRole.user.value]
     result = ingest_document(filename, source, text, access_roles)
     document = Document(
         title=filename,
@@ -134,7 +134,7 @@ def get_document_list(db: Session, user: User) -> list[DocumentResponse]:
 @router.get("", response_model=list[DocumentResponse])
 def list_documents(
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_min_role(UserRole.viewer))],
+    user: Annotated[User, Depends(require_min_role(UserRole.user))],
 ) -> list[DocumentResponse]:
     return get_document_list(db, user)
 
@@ -142,7 +142,7 @@ def list_documents(
 @router.get("/list", response_model=list[DocumentResponse])
 def list_documents_alias(
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_min_role(UserRole.viewer))],
+    user: Annotated[User, Depends(require_min_role(UserRole.user))],
 ) -> list[DocumentResponse]:
     return get_document_list(db, user)
 

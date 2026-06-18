@@ -49,7 +49,7 @@ class GroundwaterRetriever:
                     excerpt=document,
                     chunk_index=int(metadata.get("chunk_index", 0)),
                     score=max(0.0, 1 - float(distance)) if distance is not None else None,
-                    access_roles=str(metadata.get("access_roles", "viewer")).split(","),
+                    access_roles=str(metadata.get("access_roles", "user")).split(","),
                 )
             )
         return retrieved

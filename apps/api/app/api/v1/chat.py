@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import audit_log, get_current_user, require_min_role
+from app.api.deps import audit_log, get_current_user, require_authenticated_user, require_min_role
 from app.db.session import get_db
 from app.models.entities import Conversation, User, UserRole
 from app.schemas.chat import (
@@ -29,7 +29,7 @@ async def chat(
     payload: ChatRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_min_role(UserRole.viewer))],
+    user: Annotated[User, Depends(require_min_role(UserRole.user))],
 ) -> ChatResponse:
     try:
         response = await service.chat(
@@ -56,7 +56,7 @@ async def query(
     payload: QueryRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_min_role(UserRole.viewer))],
+    user: Annotated[User, Depends(require_min_role(UserRole.user))],
 ) -> ChatResponse:
     try:
         response = await service.query(payload.query, payload.language, user, payload.top_k)
@@ -74,11 +74,22 @@ async def query(
 @router.get("/conversations", response_model=list[ConversationResponse])
 def conversations(
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User | None, Depends(get_current_user)],
+    user: Annotated[User, Depends(require_authenticated_user)],
 ) -> list[ConversationResponse]:
-    query = select(Conversation).order_by(Conversation.updated_at.desc()).limit(50)
-    if user:
-        query = select(Conversation).where(Conversation.user_id == user.id).order_by(Conversation.updated_at.desc()).limit(50)
+    """Get conversations accessible to the current user.
+    
+    - Regular users: only their own conversations
+    - Admins: all conversations
+    """
+    # Admins can see all conversations
+    if user.role == UserRole.admin.value:
+        query = select(Conversation).order_by(Conversation.updated_at.desc()).limit(50)
+    else:
+        # Regular users only see their own conversations
+        query = select(Conversation).where(
+            Conversation.user_id == user.id
+        ).order_by(Conversation.updated_at.desc()).limit(50)
+    
     rows = db.scalars(query).all()
     return [
         ConversationResponse(id=row.id, title=row.title, updated_at=row.updated_at.isoformat())
@@ -90,11 +101,32 @@ def conversations(
 def conversation_detail(
     conversation_id: str,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User | None, Depends(get_current_user)],
+    user: Annotated[User, Depends(require_authenticated_user)],
 ) -> ConversationDetailResponse:
+    """Get conversation details with ownership verification.
+    
+    Returns 401 if not authenticated.
+    Returns 403 if user lacks permission to access this conversation.
+    Returns 404 if conversation not found.
+    """
     conversation = db.get(Conversation, conversation_id)
-    if conversation is None or (user and conversation.user_id != user.id):
+    if conversation is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    
+    # Check ownership: regular users can only access their own conversations
+    # Admins can access any conversation
+    is_admin = user.role == UserRole.admin.value
+    owns_conversation = conversation.user_id == user.id
+    
+    if not (is_admin or owns_conversation):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to access this conversation"
+        )
+    
+    audit_log(db, user, "VIEW_CONVERSATION", conversation_id, None)
+    db.commit()
+    
     return ConversationDetailResponse(
         id=conversation.id,
         title=conversation.title,

@@ -8,14 +8,11 @@ import { api } from "@/lib/api";
 import type { Analytics } from "@/types/api";
 
 const fallback: Analytics = {
-  active_users: 1240,
-  conversations: 8950,
-  documents_indexed: 312,
-  top_languages: [
-    { language: "Kannada", count: 4300 },
-    { language: "English", count: 2700 },
-    { language: "Hindi", count: 1200 },
-  ],
+  total_users: 0,
+  admin_count: 0,
+  regular_user_count: 0,
+  total_conversations: 0,
+  total_documents: 0,
 };
 
 export function AdminAnalytics() {
@@ -31,39 +28,25 @@ export function AdminAnalytics() {
         <h1 className="text-2xl font-semibold">Admin Analytics</h1>
         <p className="text-sm text-muted-foreground">Usage, document coverage, and language adoption across INGRES AI.</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        <AdminMetric title="Active Users" value={analytics.active_users} icon={<Users className="size-5" />} />
-        <AdminMetric title="Conversations" value={analytics.conversations} icon={<MessageSquare className="size-5" />} />
-        <AdminMetric title="Documents Indexed" value={analytics.documents_indexed} icon={<FileText className="size-5" />} />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <AdminMetric title="Total Users" value={analytics.total_users} icon={<Users className="size-5" />} />
+        <AdminMetric title="Admin Users" value={analytics.admin_count} icon={<Users className="size-5" />} />
+        <AdminMetric title="Regular Users" value={analytics.regular_user_count} icon={<Users className="size-5" />} />
+        <AdminMetric title="Conversations" value={analytics.total_conversations} icon={<MessageSquare className="size-5" />} />
+        <AdminMetric title="Documents" value={analytics.total_documents} icon={<FileText className="size-5" />} />
       </div>
-      <Card className="p-4">
-        <h2 className="mb-4 text-sm font-semibold">Top Languages</h2>
-        <div className="space-y-3">
-          {analytics.top_languages.map((item) => (
-            <div key={item.language}>
-              <div className="mb-1 flex justify-between text-sm">
-                <span>{item.language}</span>
-                <span>{item.count}</span>
-              </div>
-              <div className="h-2 rounded bg-muted">
-                <div className="h-2 rounded bg-primary" style={{ width: `${Math.min(100, item.count / 50)}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
     </section>
   );
 }
 
-function AdminMetric({ title, value, icon }: { title: string; value: number; icon: ReactNode }) {
+function AdminMetric({ title, value, icon }: { title: string; value: number | undefined; icon: ReactNode }) {
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between text-muted-foreground">
         <p className="text-sm">{title}</p>
         {icon}
       </div>
-      <p className="mt-3 text-3xl font-semibold">{value.toLocaleString()}</p>
+      <p className="mt-3 text-3xl font-semibold">{typeof value === "number" ? value.toLocaleString() : "—"}</p>
     </Card>
   );
 }

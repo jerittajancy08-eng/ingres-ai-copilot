@@ -3,27 +3,28 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { BarChart3, Bot, Droplets, Files, LogOut, Map, RotateCcw, Settings, ShieldCheck, Users } from "lucide-react";
+import { BarChart3, Bot, LogOut, Users, FileText, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { canAccessRole, useAuth } from "@/lib/auth-context";
 import type { UserRole } from "@/types/api";
 
-const nav = [
-  { href: "/chat", label: "Copilot", icon: Bot, minRole: "viewer" },
-  { href: "/documents", label: "Documents", icon: Files, minRole: "viewer" },
-  { href: "/map", label: "Maps", icon: Map, minRole: "viewer" },
-  { href: "/dashboard", label: "Dashboard", icon: Droplets, minRole: "admin" },
+const baseNav = [
+  { href: "/chat", label: "Copilot", icon: Bot, minRole: "user" },
+] satisfies Array<{ href: string; label: string; icon: typeof Bot; minRole: UserRole }>;
+
+const adminNav = [
+  { href: "/documents", label: "Documents", icon: FileText, minRole: "admin" },
   { href: "/analytics", label: "Analytics", icon: BarChart3, minRole: "admin" },
-  { href: "/admin", label: "Admin", icon: ShieldCheck, minRole: "admin" },
-  { href: "/reindex", label: "Reindex", icon: RotateCcw, minRole: "admin" },
-  { href: "/users", label: "User Management", icon: Users, minRole: "super_admin" },
-  { href: "/settings", label: "Settings", icon: Settings, minRole: "super_admin" },
+  { href: "/admin", label: "User Management", icon: Users, minRole: "admin" },
 ] satisfies Array<{ href: string; label: string; icon: typeof Bot; minRole: UserRole }>;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { isLoading, logout, user } = useAuth();
-  const visibleNav = isLoading ? nav.filter((item) => item.minRole === "viewer") : nav.filter((item) => canAccessRole(user?.role, item.minRole));
+  
+  // Build nav based on user role
+  const nav = user?.role === "admin" ? [...baseNav, ...adminNav] : baseNav;
+  const visibleNav = isLoading ? baseNav : nav;
 
   async function signOut() {
     await logout();

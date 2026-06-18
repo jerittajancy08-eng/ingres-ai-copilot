@@ -8,13 +8,9 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.models.entities import AuditLog, User, UserRole
 
-
 ROLE_LEVELS = {
-    UserRole.viewer.value: 1,
-    UserRole.analyst.value: 2,
-    UserRole.editor.value: 3,
-    UserRole.admin.value: 4,
-    UserRole.super_admin.value: 5,
+    UserRole.user.value: 1,
+    UserRole.admin.value: 2,
 }
 
 
@@ -48,6 +44,13 @@ def require_role(*roles: UserRole | str) -> Callable[[User | None], User]:
         return user
 
     return dependency
+
+
+def require_authenticated_user(user: Annotated[User | None, Depends(get_current_user)]) -> User:
+    """Require user to be authenticated. Returns 401 if not authenticated."""
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    return user
 
 
 def require_min_role(role: UserRole | str) -> Callable[[User | None], User]:

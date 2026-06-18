@@ -9,7 +9,8 @@ import { useAuth } from "@/lib/auth-context";
 
 export function DocumentUpload() {
   const { user } = useAuth();
-  const canUpload = user?.role !== "viewer";
+  const canUpload = user?.role === "admin";
+  const canView = user?.role === "admin";
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -103,12 +104,17 @@ export function DocumentUpload() {
       {/* Header */}
       <div className="border-b border-slate-200/50 bg-white px-6 py-6">
         <h1 className="text-2xl font-bold text-slate-900">Document Intelligence</h1>
-        <p className="mt-1 text-slate-600">Upload and analyze groundwater reports, studies, and technical documents</p>
+        <p className="mt-1 text-slate-600">
+          {canUpload
+            ? "Upload and analyze groundwater reports, studies, and technical documents"
+            : "View and reference available groundwater documents"}
+        </p>
       </div>
 
       {/* Main Content */}
-      <div className="grid gap-6 p-6 lg:grid-cols-[400px_1fr]">
-        {/* Upload Section */}
+      <div className={`grid gap-6 p-6 ${canUpload ? "lg:grid-cols-[400px_1fr]" : "lg:grid-cols-1"}`}>
+        {/* Upload Section - Only for Admin */}
+        {canUpload && (
         <div className="space-y-6">
           {/* Upload Card */}
           <div
@@ -156,8 +162,11 @@ export function DocumentUpload() {
               </div>
             )}
           </div>
+        </div>
+        )}
 
-          {/* Documents List */}
+        {/* Documents List - Visible to all users */}
+        <div className={`${canUpload ? "" : "lg:col-span-1"}`}>
           <div className="rounded-2xl border border-slate-200/50 bg-white p-6">
             <h3 className="font-semibold text-slate-900 mb-4">Recent Documents ({documents.length})</h3>
             <div className="space-y-2 max-h-[400px] overflow-y-auto">

@@ -3,7 +3,7 @@ import { UserManagement } from "@/components/users/user-management";
 
 export default function UsersPage() {
   return (
-    <RoleGuard minRole="super_admin">
+    <RoleGuard minRole="admin">
       <UserManagement />
     </RoleGuard>
   );

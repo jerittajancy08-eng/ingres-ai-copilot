@@ -45,7 +45,7 @@ class ChatService:
             retrieved = self.retriever.retrieve(message, top_k)
             logger.info(f"✓ Retrieved {len(retrieved)} documents")
             
-            retrieved = self._allowed_documents(retrieved, user.role if user else "viewer")
+            retrieved = self._allowed_documents(retrieved, user.role if user else "user")
             logger.info(f"✓ Filtered to {len(retrieved)} allowed documents")
             
             logger.info("🤖 Generating answer from Groq...")
@@ -121,5 +121,5 @@ class ChatService:
         return [
             doc
             for doc in retrieved
-            if any(user_level >= ROLE_LEVELS.get(access_role, 0) for access_role in (doc.access_roles or ["viewer"]))
+            if any(user_level >= ROLE_LEVELS.get(access_role, 0) for access_role in (doc.access_roles or ["user"]))
         ]

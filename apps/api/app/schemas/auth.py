@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from datetime import datetime
 
 from app.models.entities import UserRole
 
@@ -6,7 +7,7 @@ from app.models.entities import UserRole
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
-    role: UserRole = UserRole.viewer
+    # Role is automatically assigned (admin if first user, user otherwise)
 
 
 class LoginRequest(BaseModel):
@@ -18,6 +19,7 @@ class UserResponse(BaseModel):
     id: str
     email: EmailStr
     role: str
+    created_at: datetime | None = None
 
 
 class TokenResponse(BaseModel):

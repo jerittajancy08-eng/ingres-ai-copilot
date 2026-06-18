@@ -16,7 +16,7 @@ router = APIRouter()
 class UserCreateRequest(BaseModel):
     email: EmailStr
     password: str
-    role: UserRole = UserRole.viewer
+    role: UserRole = UserRole.user
 
 
 class RoleChangeRequest(BaseModel):
@@ -26,10 +26,10 @@ class RoleChangeRequest(BaseModel):
 @router.get("", response_model=list[UserResponse])
 def list_users(
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_role(UserRole.super_admin))],
+    user: Annotated[User, Depends(require_role(UserRole.admin))],
 ) -> list[UserResponse]:
     rows = db.scalars(select(User).order_by(User.created_at.desc())).all()
-    return [UserResponse(id=row.id, email=row.email, role=row.role) for row in rows]
+    return [UserResponse(id=row.id, email=row.email, role=row.role, created_at=row.created_at) for row in rows]
 
 
 @router.post("", response_model=UserResponse)
@@ -37,7 +37,7 @@ def create_user(
     payload: UserCreateRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_role(UserRole.super_admin))],
+    user: Annotated[User, Depends(require_role(UserRole.admin))],
 ) -> UserResponse:
     existing = db.scalar(select(User).where(User.email == payload.email))
     if existing:
@@ -47,7 +47,7 @@ def create_user(
     audit_log(db, user, "USER_CREATED", created.email, request.client.host if request.client else None)
     db.commit()
     db.refresh(created)
-    return UserResponse(id=created.id, email=created.email, role=created.role)
+    return UserResponse(id=created.id, email=created.email, role=created.role, created_at=created.created_at)
 
 
 @router.patch("/{user_id}/role", response_model=UserResponse)
@@ -56,7 +56,7 @@ def change_role(
     payload: RoleChangeRequest,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_role(UserRole.super_admin))],
+    user: Annotated[User, Depends(require_role(UserRole.admin))],
 ) -> UserResponse:
     target = db.get(User, user_id)
     if target is None:
@@ -65,7 +65,7 @@ def change_role(
     audit_log(db, user, "ROLE_CHANGED", target.email, request.client.host if request.client else None)
     db.commit()
     db.refresh(target)
-    return UserResponse(id=target.id, email=target.email, role=target.role)
+    return UserResponse(id=target.id, email=target.email, role=target.role, created_at=target.created_at)
 
 
 @router.delete("/{user_id}")
@@ -73,7 +73,7 @@ def delete_user(
     user_id: str,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_role(UserRole.super_admin))],
+    user: Annotated[User, Depends(require_role(UserRole.admin))],
 ) -> dict[str, str]:
     target = db.get(User, user_id)
     if target is None:

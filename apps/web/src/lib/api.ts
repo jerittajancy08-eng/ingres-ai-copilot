@@ -35,10 +35,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
-  register: (email: string, password: string, role = "viewer") =>
+  register: (email: string, password: string) =>
     request<User>("/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email, password, role }),
+      body: JSON.stringify({ email, password }),
     }),
   me: () => request<User>("/auth/me"),
   logout: () => request<{ status: string }>("/auth/logout", { method: "POST" }),
