@@ -72,7 +72,7 @@ export function InsightsPanel() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="px-6 py-4 border-b border-slate-200/50">
-        <h2 className="text-sm font-semibold text-slate-900">Today's Groundwater Insights</h2>
+        <h2 className="text-sm font-semibold text-slate-900">Today&apos;s Groundwater Insights</h2>
         <p className="text-xs text-slate-500 mt-1">Real-time monitoring dashboard</p>
       </div>
 
