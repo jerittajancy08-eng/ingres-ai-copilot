@@ -1,7 +1,7 @@
 import { getToken } from "@/lib/auth";
 import type { Analytics, ChatResponse, Conversation, DocumentRecord, GroundwaterSummary, MapAsset, TokenResponse, User, UserRole } from "@/types/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://ingres-ai-copilot.onrender.com/api/v1";
 
 async function request<T>(path: string, init?: RequestInit, withJson = true): Promise<T> {
   const token = typeof window !== "undefined" ? getToken() : null;
